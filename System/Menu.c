@@ -517,3 +517,7 @@ void displayMainMenu(void)
         MenuIndex = 0;
     }
 }*/
+
+void test()
+{
+}
