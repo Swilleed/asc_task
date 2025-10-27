@@ -197,7 +197,7 @@ void EXTI0_IRQHandler(void)
         /*如果出现数据乱跳的现象，可再次判断引脚电平，以避免抖动*/
         if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_0) == 0) {
             if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1) == 0) {
-                Encoder_Count -= 0.1;
+                Encoder_Count--;
             }
         }
         EXTI_ClearITPendingBit(EXTI_Line0);
@@ -210,7 +210,7 @@ void EXTI1_IRQHandler(void)
         /*如果出现数据乱跳的现象，可再次判断引脚电平，以避免抖动*/
         if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1) == 0) {
             if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_0) == 0) {
-                Encoder_Count += 0.1;
+                Encoder_Count++;
             }
         }
         EXTI_ClearITPendingBit(EXTI_Line1);

@@ -50,6 +50,10 @@ double pid_kd_value = 0.0;
 static double current_encoder_delta = 0.0;
 uint8_t KeyPressed;
 
+void show_pid_infor(void);
+void show_led_infor(void);
+void show_menu_item(void);
+
 // 辅助函数实现
 static LED_Speed changeLEDSpeed(LED_Speed currentSpeed, uint8_t direction)
 {
@@ -85,15 +89,20 @@ static LED_Direction changeLEDDirection(LED_Direction currentDirection)
 // 菜单功能实现
 static void LED_Speed_Func(void)
 {
-    GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
+    show_menu_item();
+    show_led_infor();
     if (Key_Check(KEY_UP, KEY_SINGLE)) {
+        GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
         OLED_Clear();
         led_speed_value = changeLEDSpeed(led_speed_value, 1);
     }
     else if (Key_Check(KEY_DOWN, KEY_SINGLE)) {
+        GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
         OLED_Clear();
         led_speed_value = changeLEDSpeed(led_speed_value, 0);
     }
+
+    show_led_infor();
     // else if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
     //   MenuIndex = CurrentMenu->Index;
     // CurrentMenu = CurrentMenu->parent;
@@ -101,15 +110,20 @@ static void LED_Speed_Func(void)
 }
 static void LED_Direction_Func(void)
 {
+    show_menu_item();
+    show_led_infor();
     if (Key_Check(KEY_DOWN, KEY_SINGLE)) {
+        GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
         OLED_Clear();
         led_direction_value = changeLEDDirection(led_direction_value);
     }
 
     else if (Key_Check(KEY_UP, KEY_SINGLE)) {
+        GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
         OLED_Clear();
         led_direction_value = changeLEDDirection(led_direction_value);
     }
+
     // else if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
     //   MenuIndex = CurrentMenu->Index;
     // CurrentMenu = CurrentMenu->parent;
@@ -117,6 +131,8 @@ static void LED_Direction_Func(void)
 }
 static void PID_Kp_Func(void)
 {
+    show_menu_item();
+    show_pid_infor();
     if (Key_Check(KEY_UP, KEY_SINGLE) || Key_Check(KEY_UP, KEY_REPEAT)) {
         OLED_Clear();
         pid_kp_value += 0.1;
@@ -130,11 +146,12 @@ static void PID_Kp_Func(void)
     //  CurrentMenu = CurrentMenu->parent;
     //}
 
-    pid_kp_value -= current_encoder_delta;
+    pid_kp_value -= current_encoder_delta / 10;
 }
 static void PID_Ki_Func(void)
 {
-
+    show_menu_item();
+    show_pid_infor();
     if (Key_Check(KEY_UP, KEY_SINGLE) || Key_Check(KEY_UP, KEY_REPEAT)) {
         OLED_Clear();
         pid_ki_value += 0.1;
@@ -147,10 +164,12 @@ static void PID_Ki_Func(void)
     //   MenuIndex = CurrentMenu->Index;
     // CurrentMenu = CurrentMenu->parent;
     //    }
-    pid_ki_value -= current_encoder_delta;
+    pid_ki_value -= current_encoder_delta / 10;
 }
 static void PID_Kd_Func(void)
 {
+    show_menu_item();
+    show_pid_infor();
     if (Key_Check(KEY_UP, KEY_SINGLE) || Key_Check(KEY_UP, KEY_REPEAT)) {
         OLED_Clear();
         pid_kd_value += 0.1;
@@ -163,7 +182,7 @@ static void PID_Kd_Func(void)
     //    MenuIndex = CurrentMenu->Index;
     //  CurrentMenu = CurrentMenu->parent;
     //}
-    pid_kd_value -= current_encoder_delta;
+    pid_kd_value -= current_encoder_delta / 10;
 }
 
 static char *DoubleToChar(double num)
@@ -276,53 +295,18 @@ Menu *Init_Menu(void)
     return &Main;
 }
 
-void displayMenu(void)
+void show_pid_infor()
 {
-    // OLED_Clear();
+    // show_menu_item();
+    OLED_ShowString(2, 13, DoubleToChar(pid_kp_value));
+    OLED_ShowString(3, 13, DoubleToChar(pid_ki_value));
+    OLED_ShowString(4, 13, DoubleToChar(pid_kd_value));
+}
 
-    // 按键处理部分
-    current_encoder_delta = Encoder_Get();
+void show_led_infor()
+{
+    // show_menu_item();
 
-    //  OLED_ShowString(3, 10, "Enc:");
-    // OLED_ShowSignedNum(4, 10, (int16_t)(current_encoder_delta * 10), 4);
-    if (CurrentMenu->func == NULL) {
-        if ((Key_Check(KEY_UP, KEY_SINGLE) || Key_Check(KEY_UP, KEY_REPEAT)) && CurrentMenu->childcount > 0) {
-            MenuIndex = (MenuIndex == CurrentMenu->childcount - 1) ? 0 : MenuIndex + 1;
-            OLED_Clear();
-        }
-        if ((Key_Check(KEY_DOWN, KEY_SINGLE) || Key_Check(KEY_DOWN, KEY_SINGLE)) && CurrentMenu->childcount > 0) {
-            MenuIndex = (MenuIndex == 0) ? CurrentMenu->childcount - 1 : MenuIndex - 1;
-            OLED_Clear();
-        }
-    }
-    if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
-        OLED_Clear();
-        if (CurrentMenu->childcount == 0 && CurrentMenu->func != NULL) {
-            // CurrentMenu->func();
-
-            MenuIndex = CurrentMenu->Index;
-            CurrentMenu = CurrentMenu->parent;
-        }
-        else {
-            CurrentMenu = CurrentMenu->child[MenuIndex];
-            if (CurrentMenu->child[MenuIndex]->func == NULL) {
-                MenuIndex = 0;
-            }
-        }
-    }
-    if (Key_Check(KEY_BACK, KEY_SINGLE) && CurrentMenu->parent != NULL) {
-        OLED_Clear();
-        MenuIndex = CurrentMenu->Index;
-        CurrentMenu = CurrentMenu->parent;
-    }
-
-    // 当前菜单
-    if (CurrentMenu->func != NULL) {
-        OLED_ShowString(1, 1, CurrentMenu->parent->name);
-    }
-    else {
-        OLED_ShowString(1, 1, CurrentMenu->name);
-    }
     char *speedStr;
     switch (led_speed_value) {
     case LED_SLOW:
@@ -339,20 +323,90 @@ void displayMenu(void)
         break;
     }
     char *dirStr = (led_direction_value == DIR_CW) ? "0" : "1";
-    // 菜单显示部分
+
+    OLED_ShowString(2, 14, speedStr);
+    OLED_ShowString(3, 14, dirStr);
+}
+
+void show_menu_item()
+{
+    // 当前菜单
+    if (CurrentMenu->parent != NULL) {
+        if (CurrentMenu->func != NULL) {
+            OLED_ShowString(1, 1, CurrentMenu->name);
+            for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
+                OLED_ShowString(i + 2, 1, (i == CurrentMenu->Index) ? ">" : " ");
+                OLED_ShowString(i + 2, 2, CurrentMenu->parent->child[i]->name);
+            }
+        }
+        else {
+            OLED_ShowString(1, 1, CurrentMenu->name);
+        }
+    }
+
     for (uint8_t i = 0; i < CurrentMenu->childcount; i++) {
         OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
         OLED_ShowString(i + 2, 2, CurrentMenu->child[i]->name);
+    }
+    if (CurrentMenu == Main.child[1]) {
+        for (uint8_t i = 0; i < PID.childcount; i++) {
+            show_pid_infor();
+        }
+    }
+    if (CurrentMenu == Main.child[0]) {
+        show_led_infor();
+    }
+}
 
-        if (CurrentMenu == Main.child[1]) {
-            for (uint8_t i = 0; i < PID.childcount; i++) {
-                OLED_ShowString(i + 2, 13, DoubleToChar(*(PID.child[i]->value.pid_value)));
+void show_infor()
+{
+    if (CurrentMenu == Main.child[1]) {
+        for (uint8_t i = 0; i < PID.childcount; i++) {
+            show_pid_infor();
+        }
+    }
+    if (CurrentMenu == Main.child[0]) {
+        show_led_infor();
+    }
+}
+
+void displayMenu(void)
+{
+    // OLED_Clear();
+
+    // 按键处理部分
+    current_encoder_delta = Encoder_Get();
+
+    show_infor();
+    // OLED_ShowSignedNum(4, 10, (int16_t)(current_encoder_delta * 10), 4);
+    if (CurrentMenu->func == NULL) {
+        if ((Key_Check(KEY_UP, KEY_SINGLE) || Key_Check(KEY_UP, KEY_REPEAT)) && CurrentMenu->childcount > 0) {
+            MenuIndex = (MenuIndex == CurrentMenu->childcount - 1) ? 0 : MenuIndex + 1;
+            OLED_Clear();
+        }
+        if ((Key_Check(KEY_DOWN, KEY_SINGLE) || Key_Check(KEY_DOWN, KEY_SINGLE)) && CurrentMenu->childcount > 0) {
+            MenuIndex = (MenuIndex == 0) ? CurrentMenu->childcount - 1 : MenuIndex - 1;
+            OLED_Clear();
+        }
+    }
+    if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
+        OLED_Clear();
+        if (CurrentMenu->childcount == 0 && CurrentMenu->func != NULL) {
+
+            MenuIndex = CurrentMenu->Index;
+            CurrentMenu = CurrentMenu->parent;
+        }
+        else if (CurrentMenu->childcount > 0) {
+            CurrentMenu = CurrentMenu->child[MenuIndex];
+            if (CurrentMenu->child[MenuIndex]->func == NULL) {
+                MenuIndex = 0;
             }
         }
-        if (CurrentMenu == Main.child[0]) {
-            OLED_ShowString(2, 14, speedStr);
-            OLED_ShowString(3, 14, dirStr);
-        }
+    }
+    if (Key_Check(KEY_BACK, KEY_SINGLE) && CurrentMenu->parent != NULL) {
+        OLED_Clear();
+        MenuIndex = CurrentMenu->Index;
+        CurrentMenu = CurrentMenu->parent;
     }
 
     // 功能指示部分
@@ -363,108 +417,21 @@ void displayMenu(void)
     // 全局变量显示部分
 
     // 根据当前菜单调用相应的功能显示
-    if (CurrentMenu->func == LED_Speed_Func) {
-        LED_Speed_Func();
 
-        // 一个菜单中所有子菜单数据都显示
-        OLED_ShowString(2, 14, speedStr);
-        OLED_ShowString(3, 14, dirStr);
-
-        for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
-            OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
-            OLED_ShowString(i + 2, 3, CurrentMenu->parent->child[i]->name);
-        }
+    if (CurrentMenu->func != NULL) {
+        CurrentMenu->func();
+        OLED_ShowString(1, 14, "E");
     }
-    else if (CurrentMenu->func == LED_Direction_Func) {
-        LED_Direction_Func();
-
-        OLED_ShowString(2, 14, speedStr);
-        OLED_ShowString(3, 14, dirStr);
-        for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
-            OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
-            OLED_ShowString(i + 2, 3, CurrentMenu->parent->child[i]->name);
-        }
+    else {
+        OLED_ShowString(1, 14, " ");
+        show_menu_item();
     }
-    else if (CurrentMenu->func == PID_Kp_Func) {
-        PID_Kp_Func();
-        // OLED_ShowSignedNum(1, 5, (uint16_t)Encoder_Get() * 10, 2);
-
-        OLED_ShowString(2, 13, DoubleToChar(pid_kp_value));
-        OLED_ShowString(3, 13, DoubleToChar(pid_ki_value));
-        OLED_ShowString(4, 13, DoubleToChar(pid_kd_value));
-        for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
-            OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
-            OLED_ShowString(i + 2, 3, CurrentMenu->parent->child[i]->name);
-        }
-    }
-    else if (CurrentMenu->func == PID_Ki_Func) {
-        PID_Ki_Func();
-        OLED_ShowString(2, 13, DoubleToChar(pid_kp_value));
-        OLED_ShowString(3, 13, DoubleToChar(pid_ki_value));
-        OLED_ShowString(4, 13, DoubleToChar(pid_kd_value));
-        for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
-            OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
-            OLED_ShowString(i + 2, 3, CurrentMenu->parent->child[i]->name);
-        }
-    }
-    else if (CurrentMenu->func == PID_Kd_Func) {
-        PID_Kd_Func();
-        OLED_ShowString(2, 13, DoubleToChar(pid_kp_value));
-        OLED_ShowString(3, 13, DoubleToChar(pid_ki_value));
-        OLED_ShowString(4, 13, DoubleToChar(pid_kd_value));
-        for (uint8_t i = 0; i < CurrentMenu->parent->childcount; i++) {
-            OLED_ShowString(i + 2, 1, (i == MenuIndex) ? ">" : " ");
-            OLED_ShowString(i + 2, 3, CurrentMenu->parent->child[i]->name);
-        }
-    }
-
-    /*if (CurrentMenu->func != NULL) {
-        if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
-            MenuIndex = CurrentMenu->Index;
-            CurrentMenu = CurrentMenu->parent;
-        }
-    }*/
-
-    /*
-    if (Key_Check(KEY_UP, KEY_SINGLE)) {
-        MenuIndex = (MenuIndex == 0) ? CurrentMenu->childcount - 1 : MenuIndex - 1;
-    }
-    if (Key_Check(KEY_DOWN, KEY_SINGLE)) {
-        MenuIndex = (MenuIndex == CurrentMenu->childcount - 1) ? 0 : MenuIndex + 1;
-    }
-    if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
-        if (CurrentMenu->childcount == 0 && CurrentMenu->func != NULL) {
-            CurrentMenu->func();
-        }
-        else {
-            CurrentMenu = CurrentMenu->child[MenuIndex];
-            MenuIndex = 0;
-        }
-    }
-    if (Key_Check(KEY_BACK,KEY_SINGLE)) {
-        CurrentMenu = CurrentMenu->parent;
-        MenuIndex = 0;
-    }
-    for (uint8_t i = 0; i < CurrentMenu->childcount; i++) {
-        if (i == MenuIndex) {
-            OLED_ShowString(i + 2, 1, ">");
-        }
-        else {
-            OLED_ShowString(i + 2, 1, " ");
-        }
-    }*/
-
-    // Delay_ms(2000);
 }
 
 void displayMainMenu(void)
 {
 
-    // OLED_Clear();
     current_encoder_delta = Encoder_Get();
-
-    // OLED_ShowString(3, 10, "Enc:");
-    // OLED_ShowSignedNum(4, 10, (int16_t)(current_encoder_delta * 10), 4);
 
     for (uint8_t i = 0; i < Main.childcount; i++) {
         OLED_ShowString(i + 1, 2, Main.child[i]->name);
@@ -497,27 +464,4 @@ void displayMainMenu(void)
         CurrentMenu = CurrentMenu->parent;
         MenuIndex = 0;
     }
-
-    // Delay_ms(2000);
-}
-/*void handleMenuInput(void)
-{
-    if (Key_Check(KEY_UP, KEY_SINGLE) && CurrentMenu->childcount > 0) {
-        MenuIndex = (MenuIndex == CurrentMenu->childcount - 1) ? 0 : MenuIndex + 1;
-    }
-    if (Key_Check(KEY_DOWN, KEY_SINGLE)) {
-        MenuIndex = (MenuIndex == 0) ? Main.childcount - 1 : MenuIndex - 1;
-    }
-    if (Key_Check(KEY_ENTER, KEY_SINGLE)) {
-        CurrentMenu = CurrentMenu->child[MenuIndex];
-        MenuIndex = 0;
-    }
-    if (Key_Check(KEY_BACK, KEY_SINGLE) && CurrentMenu->parent != NULL) {
-        CurrentMenu = CurrentMenu->parent;
-        MenuIndex = 0;
-    }
-}*/
-
-void test()
-{
 }
